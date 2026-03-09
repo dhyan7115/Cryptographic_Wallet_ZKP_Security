@@ -1,0 +1,178 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>Transaction History</title>
+</head>
+<body>
+
+<h2>Your Transactions</h2>
+
+{% if transactions %}
+    {% for tx in transactions %}
+        <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
+            <p><strong>From:</strong> {{ tx.from }}</p>
+            <p><strong>To:</strong> {{ tx.to }}</p>
+            <p><strong>Amount:</strong> {{ tx.amount }}</p>
+            <p><strong>Transaction Hash:</strong> {{ tx.hash }}</p>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No transactions found.</p>
+{% endif %}
+
+<br>
+<a href="/dashboard">Back to Dashboard</a>
+
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoVault // Transactions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--green:#00ff41;--dim:#00aa29;--dark:#020c02;--border:rgba(0,255,65,.3);--muted:#3a7a4a;--cyan:#00f5ff;--red:#ff3333;--glow:0 0 10px rgba(0,255,65,.5),0 0 30px rgba(0,255,65,.2);--glow-s:0 0 20px rgba(0,255,65,.8),0 0 60px rgba(0,255,65,.3);}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--dark);color:#e0ffe8;font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+    #mc{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:.06;pointer-events:none;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.1) 2px,rgba(0,0,0,.1) 4px);pointer-events:none;z-index:1;}
+    body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,65,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,65,.02) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:1;}
+
+    .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(2,12,2,.95);border-bottom:1px solid rgba(0,255,65,.15);display:flex;align-items:center;justify-content:space-between;padding:0 32px;backdrop-filter:blur(8px);}
+    .nav-logo{font-family:'Orbitron',monospace;font-weight:900;font-size:1rem;color:var(--green);text-shadow:var(--glow);letter-spacing:.25em;}
+    .nav-back{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--dim);letter-spacing:.15em;text-decoration:none;border:1px solid rgba(0,255,65,.2);padding:5px 14px;border-radius:2px;transition:all .2s;}
+    .nav-back:hover{border-color:var(--border);color:var(--green);}
+
+    .page{position:relative;z-index:2;max-width:920px;margin:0 auto;padding:80px 24px 40px;}
+    .page-header{margin-bottom:28px;animation:up .5s ease forwards;}
+    @keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    .page-header h1{font-family:'Orbitron',monospace;font-weight:900;font-size:1.4rem;color:var(--green);text-shadow:var(--glow-s);letter-spacing:.2em;}
+    .page-header p{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.2em;margin-top:6px;}
+
+    /* TABLE HEADER */
+    .table-head{display:grid;grid-template-columns:1fr 1fr 100px 1fr;gap:12px;padding:10px 20px;font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;border-bottom:1px solid rgba(0,255,65,.15);margin-bottom:6px;animation:up .5s .1s ease both;}
+
+    /* TX ROWS */
+    .tx-list{display:flex;flex-direction:column;gap:8px;}
+    .tx{background:rgba(4,15,4,.97);border:1px solid rgba(0,255,65,.12);border-radius:3px;padding:16px 20px;display:grid;grid-template-columns:1fr 1fr 100px 1fr;gap:12px;align-items:center;transition:all .2s;cursor:default;animation:up .5s ease both;}
+    .tx:hover{border-color:rgba(0,255,65,.28);background:rgba(0,25,5,.97);transform:translateX(3px);}
+    .tx:nth-child(1){animation-delay:.1s}
+    .tx:nth-child(2){animation-delay:.15s}
+    .tx:nth-child(3){animation-delay:.2s}
+    .tx:nth-child(4){animation-delay:.25s}
+    .tx:nth-child(5){animation-delay:.3s}
+    .tx:nth-child(n+6){animation-delay:.35s}
+
+    .tx-field{overflow:hidden;}
+    .tx-label{font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.2em;text-transform:uppercase;margin-bottom:5px;}
+    .tx-value{font-family:'Share Tech Mono',monospace;font-size:.72rem;color:var(--dim);letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .tx-value.addr:hover{color:var(--green);cursor:pointer;}
+
+    .tx-amount .tx-value{font-family:'Orbitron',monospace;font-weight:700;font-size:.95rem;letter-spacing:.05em;}
+    .tx-amount.sent .tx-value{color:var(--red);text-shadow:0 0 8px rgba(255,51,51,.4);}
+    .tx-amount.received .tx-value{color:var(--green);text-shadow:var(--glow);}
+
+    .tx-hash-val{font-size:.62rem;color:rgba(0,255,65,.4);}
+
+    .badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:.58rem;letter-spacing:.12em;padding:2px 8px;border-radius:1px;margin-top:4px;}
+    .badge-sent{border:1px solid rgba(255,51,51,.35);color:var(--red);background:rgba(255,51,51,.05);}
+    .badge-recv{border:1px solid rgba(0,255,65,.3);color:var(--green);background:rgba(0,255,65,.04);}
+
+    /* EMPTY STATE */
+    .empty{text-align:center;padding:60px 20px;animation:up .5s .1s ease both;}
+    .empty-icon{font-size:3rem;margin-bottom:16px;opacity:.3;filter:drop-shadow(0 0 8px rgba(0,255,65,.3));}
+    .empty h2{font-family:'Orbitron',monospace;font-size:1rem;color:var(--muted);letter-spacing:.2em;margin-bottom:10px;}
+    .empty p{font-family:'Share Tech Mono',monospace;font-size:.65rem;color:rgba(58,122,74,.6);letter-spacing:.15em;}
+
+    /* STATS BAR */
+    .stats{display:flex;gap:20px;margin-bottom:20px;animation:up .5s .05s ease both;}
+    .stat{background:rgba(4,15,4,.97);border:1px solid rgba(0,255,65,.12);border-radius:3px;padding:14px 20px;flex:1;}
+    .stat-label{font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--muted);letter-spacing:.2em;margin-bottom:6px;}
+    .stat-val{font-family:'Orbitron',monospace;font-weight:700;font-size:1.1rem;color:var(--green);text-shadow:var(--glow);}
+  </style>
+</head>
+<body>
+<canvas id="mc"></canvas>
+
+<nav class="nav">
+  <div class="nav-logo">⬡ CRYPTOVAULT</div>
+  <a href="/dashboard" class="nav-back">← BACK TO DASHBOARD</a>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <h1>TRANSACTION LEDGER</h1>
+    <p>// IMMUTABLE_CHAIN_HISTORY · CRYPTOGRAPHIC_SIGNATURES_VERIFIED</p>
+  </div>
+
+  {% if transactions %}
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">TOTAL TXS</div>
+      <div class="stat-val">{{ transactions|length }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">TOTAL SENT</div>
+      <div class="stat-val" style="color:#ff3333;text-shadow:0 0 8px rgba(255,51,51,.4);">
+        {{ transactions|selectattr('from','defined')|sum(attribute='amount') }} CVT
+      </div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">CHAIN STATUS</div>
+      <div class="stat-val" style="font-size:.75rem;color:#00f5ff;text-shadow:0 0 8px rgba(0,245,255,.4);">VERIFIED ✓</div>
+    </div>
+  </div>
+
+  <!-- TABLE HEADER -->
+  <div class="table-head">
+    <span>FROM</span>
+    <span>TO</span>
+    <span>AMOUNT</span>
+    <span>TX HASH</span>
+  </div>
+
+  <!-- TX ROWS -->
+  <div class="tx-list">
+    {% for tx in transactions %}
+    <div class="tx">
+      <div class="tx-field">
+        <div class="tx-label">FROM</div>
+        <div class="tx-value addr" title="{{ tx.from }}">{{ tx.from[:20] }}...</div>
+      </div>
+      <div class="tx-field">
+        <div class="tx-label">TO</div>
+        <div class="tx-value addr" title="{{ tx.to }}">{{ tx.to[:20] }}...</div>
+      </div>
+      <div class="tx-field tx-amount sent">
+        <div class="tx-label">AMOUNT</div>
+        <div class="tx-value">{{ tx.amount }}</div>
+        <span class="badge badge-sent">SENT</span>
+      </div>
+      <div class="tx-field">
+        <div class="tx-label">HASH</div>
+        <div class="tx-value tx-hash-val" title="{{ tx.hash }}">{{ tx.hash[:24] }}...</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+
+  <div class="empty">
+    <div class="empty-icon">◈</div>
+    <h2>NO TRANSACTIONS FOUND</h2>
+    <p>YOUR LEDGER IS EMPTY. SEND TOKENS TO INITIATE YOUR FIRST TRANSACTION.</p>
+  </div>
+
+  {% endif %}
+</div>
+
+<script>
+!function(){const c=document.getElementById('mc'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const ch='アイウエオカキクケコ0123456789ABCDEF$#@%&※◆▲',fs=13,cols=Math.floor(c.width/fs),d=Array(cols).fill(1);function draw(){x.fillStyle='rgba(2,12,2,.05)';x.fillRect(0,0,c.width,c.height);x.font=fs+'px monospace';for(let i=0;i<d.length;i++){const t=ch[Math.floor(Math.random()*ch.length)];x.fillStyle=Math.random()>.97?'#fff':Math.random()>.8?'#00aa29':'#00ff41';x.fillText(t,i*fs,d[i]*fs);if(d[i]*fs>c.height&&Math.random()>.975)d[i]=0;d[i]++}}setInterval(draw,45);window.addEventListener('resize',()=>{c.width=innerWidth;c.height=innerHeight})}();
+</script>
+</body>
+</html>

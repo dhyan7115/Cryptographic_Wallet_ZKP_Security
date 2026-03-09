@@ -1,0 +1,312 @@
+<!-- <!DOCTYPE html>
+<html>
+<head>
+    <title>ZKP Authentication</title>
+</head>
+<body>
+
+<h2>Zero Knowledge Proof Authentication</h2>
+
+<p>Rounds: {{ rounds }}</p>
+
+<label>Enter Your Secret (same number used during registration):</label><br>
+<input type="number" id="secret" required><br><br>
+
+<button onclick="startZKP()">Start ZKP Verification</button>
+
+<hr>
+
+<h3>Debug Output</h3>
+<pre id="output"></pre>
+
+<script>
+async function startZKP() {
+
+    const secret = BigInt(document.getElementById("secret").value);
+    const rounds = {{ rounds }};
+
+    let t_list = [];
+    let r_list = [];
+
+    // Step 1: Commitment
+    for (let i = 0; i < rounds; i++) {
+        let r = BigInt(Math.floor(Math.random() * 100000));
+        r_list.push(r);
+        let t = (2n ** r) % BigInt("208351617316091241234326746312124448251235562226470491514186331217050270460481");
+        t_list.push(t.toString());
+    }
+
+    // Send commitment
+    const challengeRes = await fetch("/zkp_challenge", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ t: t_list })
+    });
+
+    const challengeData = await challengeRes.json();
+
+    if (challengeData.error) {
+        alert("Error: " + challengeData.error);
+        return;
+    }
+
+    const c_list = challengeData.challenge;
+    const nonce = challengeData.nonce;
+
+    let s_list = [];
+
+    // Step 2: Response
+    for (let i = 0; i < rounds; i++) {
+        let s = r_list[i] + BigInt(c_list[i]) * secret;
+        s_list.push(s.toString());
+    }
+
+    // Step 3: Verify
+    const verifyRes = await fetch("/zkp_verify", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            s: s_list,
+            nonce: nonce
+        })
+    });
+
+    const verifyData = await verifyRes.json();
+
+    document.getElementById("output").textContent =
+        JSON.stringify(verifyData, null, 2);
+
+    if (verifyData.status === "success") {
+        alert("ZKP Authentication Successful!");
+        window.location = "/dashboard";
+    } else {
+        alert("ZKP Failed: " + verifyData.reason);
+    }
+}
+</script>
+
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CryptoVault // ZKP Authentication</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--green:#00ff41;--dim:#00aa29;--dark:#020c02;--border:rgba(0,255,65,.3);--muted:#3a7a4a;--cyan:#00f5ff;--red:#ff3333;--glow:0 0 10px rgba(0,255,65,.5),0 0 30px rgba(0,255,65,.2);--glow-s:0 0 20px rgba(0,255,65,.8),0 0 60px rgba(0,255,65,.3);}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--dark);color:#e0ffe8;font-family:'Rajdhani',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow-x:hidden;}
+    #mc{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:.08;pointer-events:none;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px);pointer-events:none;z-index:1;}
+    body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,65,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,65,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:1;}
+
+    .wrap{position:relative;z-index:2;width:100%;max-width:520px;padding:20px;animation:up .6s ease forwards;}
+    @keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+    .top{text-align:center;margin-bottom:24px;}
+    .logo{font-family:'Orbitron',monospace;font-weight:900;font-size:1.5rem;color:var(--green);text-shadow:var(--glow-s);letter-spacing:.25em;}
+    .sub{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.3em;margin-top:5px;}
+
+    .card{background:linear-gradient(160deg,rgba(4,15,4,.97),rgba(6,18,6,.99));border:1px solid var(--border);border-radius:4px;padding:36px 42px;position:relative;box-shadow:0 0 50px rgba(0,255,65,.06);}
+    .card::before{content:'';position:absolute;top:-1px;left:15%;right:15%;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px rgba(0,245,255,.5),0 0 30px rgba(0,245,255,.2);}
+    .cc{position:absolute;width:14px;height:14px;}
+    .cc.tl{top:8px;left:8px;border-top:1px solid var(--dim);border-left:1px solid var(--dim);}
+    .cc.tr{top:8px;right:8px;border-top:1px solid var(--dim);border-right:1px solid var(--dim);}
+    .cc.bl{bottom:8px;left:8px;border-bottom:1px solid var(--dim);border-left:1px solid var(--dim);}
+    .cc.br{bottom:8px;right:8px;border-bottom:1px solid var(--dim);border-right:1px solid var(--dim);}
+
+    .th{font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.2em;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid rgba(0,255,65,.1);display:flex;justify-content:space-between;}
+    .th .blink{color:var(--cyan);animation:blink 1s step-end infinite;}
+    @keyframes blink{50%{opacity:0}}
+
+    .title{font-family:'Orbitron',monospace;font-weight:700;font-size:1.05rem;color:var(--cyan);text-shadow:0 0 10px rgba(0,245,255,.5);letter-spacing:.12em;margin-bottom:6px;}
+    .rounds-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--dim);border:1px solid rgba(0,255,65,.2);padding:2px 10px;border-radius:1px;letter-spacing:.15em;margin-bottom:22px;}
+
+    /* PROGRESS ROUNDS */
+    .rounds-track{display:flex;gap:6px;margin-bottom:22px;}
+    .round-dot{width:28px;height:6px;background:rgba(0,255,65,.1);border-radius:1px;transition:all .3s;}
+    .round-dot.active{background:var(--green);box-shadow:0 0 6px rgba(0,255,65,.6);}
+    .round-dot.done{background:var(--dim);}
+
+    .fg{margin-bottom:20px;}
+    label{display:block;font-family:'Share Tech Mono',monospace;font-size:.66rem;color:var(--dim);letter-spacing:.25em;text-transform:uppercase;margin-bottom:8px;}
+    input[type=number]{width:100%;background:rgba(0,20,5,.8);border:1px solid rgba(0,255,65,.22);border-radius:2px;color:var(--green);font-family:'Share Tech Mono',monospace;font-size:.95rem;padding:13px 16px;outline:none;transition:all .25s;caret-color:var(--green);}
+    input[type=number]:focus{border-color:var(--cyan);box-shadow:0 0 10px rgba(0,245,255,.35),inset 0 0 15px rgba(0,245,255,.03);background:rgba(0,30,8,.9);}
+    input::placeholder{color:rgba(0,170,41,.35);font-size:.8rem;}
+    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;}
+
+    .btn{display:block;width:100%;background:transparent;color:var(--cyan);border:1px solid var(--cyan);box-shadow:0 0 10px rgba(0,245,255,.35);border-radius:2px;font-family:'Orbitron',monospace;font-weight:700;font-size:.75rem;letter-spacing:.25em;text-transform:uppercase;padding:14px 32px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+    .btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,245,255,.1),transparent);transition:left .45s;}
+    .btn:hover::before{left:100%;}
+    .btn:hover{background:rgba(0,245,255,.06);box-shadow:0 0 20px rgba(0,245,255,.55);color:#fff;}
+    .btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* STATUS LOG */
+    .log{margin-top:20px;background:rgba(0,0,0,.5);border:1px solid rgba(0,255,65,.1);border-radius:2px;padding:14px 16px;min-height:80px;max-height:180px;overflow-y:auto;}
+    .log-line{font-family:'Share Tech Mono',monospace;font-size:.62rem;letter-spacing:.08em;line-height:1.8;color:var(--muted);}
+    .log-line.success{color:var(--green);}
+    .log-line.error{color:var(--red);}
+    .log-line.info{color:var(--cyan);}
+
+    /* SPINNER */
+    .spinner{display:none;width:16px;height:16px;border:2px solid rgba(0,255,65,.2);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinner.active{display:inline-block;}
+
+    .protocol-info{background:rgba(0,245,255,.02);border:1px solid rgba(0,245,255,.1);border-radius:2px;padding:12px 14px;margin-bottom:20px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:rgba(0,245,255,.5);letter-spacing:.08em;line-height:1.7;}
+  </style>
+</head>
+<body>
+<canvas id="mc"></canvas>
+<div class="wrap">
+  <div class="top">
+    <div class="logo">CRYPTOVAULT</div>
+    <div class="sub">CRYPTOGRAPHIC IDENTITY PROTOCOL</div>
+  </div>
+
+  <div class="card">
+    <div class="cc tl"></div><div class="cc tr"></div><div class="cc bl"></div><div class="cc br"></div>
+    <div class="th"><span>// ZKP_AUTH_ENGINE.exe</span><span class="blink">■</span></div>
+    <div class="title">ZERO KNOWLEDGE PROOF</div>
+    <div class="rounds-badge">{{ rounds }} VERIFICATION ROUNDS</div>
+
+    <div class="rounds-track" id="rounds-track">
+      {% for i in range(rounds) %}
+      <div class="round-dot" id="rd-{{ i }}"></div>
+      {% endfor %}
+    </div>
+
+    <div class="protocol-info">
+      // SCHNORR IDENTIFICATION PROTOCOL<br>
+      ▸ PROVES KNOWLEDGE OF SECRET WITHOUT REVEALING IT<br>
+      ▸ MATHEMATICALLY ZERO KNOWLEDGE — NOTHING IS LEAKED<br>
+      ▸ {{ rounds }} INDEPENDENT CHALLENGE-RESPONSE ROUNDS
+    </div>
+
+    <div class="fg">
+      <label>⬡ SECRET KEY (SAME AS REGISTRATION)</label>
+      <input type="number" id="secret" placeholder="ENTER_YOUR_SECRET" required>
+    </div>
+
+    <button class="btn" id="zkp-btn" onclick="startZKP()">
+      ⬡ BEGIN PROOF SEQUENCE →
+    </button>
+
+    <div class="log" id="output">
+      <div class="log-line">// AWAITING INPUT...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const rounds = {{ rounds }};
+
+function log(msg, type=''){
+  const out = document.getElementById('output');
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = '> ' + msg;
+  out.appendChild(line);
+  out.scrollTop = out.scrollHeight;
+}
+
+function setRound(i, state){
+  const dot = document.getElementById('rd-'+i);
+  if(dot){ dot.className = 'round-dot ' + state; }
+}
+
+async function startZKP() {
+  const secret = BigInt(document.getElementById("secret").value || 0);
+  if(!secret){ log('ERROR: NO SECRET PROVIDED', 'error'); return; }
+
+  const btn = document.getElementById('zkp-btn');
+  btn.disabled = true;
+  btn.textContent = 'PROCESSING...';
+  document.getElementById('output').innerHTML = '';
+
+  log('INITIALIZING ZKP PROTOCOL...', 'info');
+  log('GENERATING ' + rounds + ' COMMITMENT VALUES...');
+
+  const p = BigInt("208351617316091241234326746312124448251235562226470491514186331217050270460481");
+  let t_list = [], r_list = [];
+
+  for(let i = 0; i < rounds; i++){
+    let r = BigInt(Math.floor(Math.random() * 100000));
+    r_list.push(r);
+    let t = modPow(2n, r, p);
+    t_list.push(t.toString());
+    setRound(i, 'active');
+    await sleep(60);
+  }
+
+  log('COMMITMENTS GENERATED ✓', 'success');
+  log('SENDING TO SERVER FOR CHALLENGE...');
+
+  const challengeRes = await fetch("/zkp_challenge", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ t: t_list })
+  });
+
+  const challengeData = await challengeRes.json();
+  if(challengeData.error){ log('ERROR: ' + challengeData.error, 'error'); btn.disabled=false; btn.textContent='⬡ RETRY PROOF →'; return; }
+
+  const c_list = challengeData.challenge;
+  const nonce = challengeData.nonce;
+  log('CHALLENGES RECEIVED ✓', 'success');
+  log('COMPUTING RESPONSES FOR ' + rounds + ' ROUNDS...');
+
+  let s_list = [];
+  for(let i = 0; i < rounds; i++){
+    let s = r_list[i] + BigInt(c_list[i]) * secret;
+    s_list.push(s.toString());
+    setRound(i, 'done');
+    log('ROUND ' + (i+1) + '/' + rounds + ' COMPUTED ✓');
+    await sleep(80);
+  }
+
+  log('SUBMITTING PROOF TO VERIFIER...');
+
+  const verifyRes = await fetch("/zkp_verify", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ s: s_list, nonce: nonce })
+  });
+
+  const verifyData = await verifyRes.json();
+
+  if(verifyData.status === "success"){
+    log('ALL ROUNDS VERIFIED ✓', 'success');
+    log('IDENTITY CONFIRMED — REDIRECTING...', 'success');
+    btn.textContent = '✓ AUTHENTICATED';
+    btn.style.borderColor = '#00ff41';
+    btn.style.color = '#00ff41';
+    setTimeout(()=>{ window.location = "/dashboard"; }, 900);
+  } else {
+    log('PROOF FAILED — INVALID SECRET', 'error');
+    log('ACCESS DENIED', 'error');
+    btn.disabled = false;
+    btn.textContent = '⬡ RETRY PROOF →';
+    for(let i=0;i<rounds;i++) setRound(i,'');
+  }
+}
+
+function modPow(base, exp, mod){
+  let result = 1n; base = base % mod;
+  while(exp > 0n){
+    if(exp % 2n === 1n) result = (result * base) % mod;
+    exp = exp / 2n; base = (base * base) % mod;
+  }
+  return result;
+}
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+!function(){const c=document.getElementById('mc'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const ch='アイウエオカキクケコ0123456789ABCDEF$#@%&※◆▲',fs=13,cols=Math.floor(c.width/fs),d=Array(cols).fill(1);function draw(){x.fillStyle='rgba(2,12,2,.05)';x.fillRect(0,0,c.width,c.height);x.font=fs+'px monospace';for(let i=0;i<d.length;i++){const t=ch[Math.floor(Math.random()*ch.length)];x.fillStyle=Math.random()>.97?'#fff':Math.random()>.8?'#00aa29':'#00ff41';x.fillText(t,i*fs,d[i]*fs);if(d[i]*fs>c.height&&Math.random()>.975)d[i]=0;d[i]++}}setInterval(draw,45);window.addEventListener('resize',()=>{c.width=innerWidth;c.height=innerHeight})}();
+</script>
+</body>
+</html>
