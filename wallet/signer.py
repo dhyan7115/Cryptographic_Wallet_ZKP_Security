@@ -1,24 +1,8 @@
-# from ecdsa import SigningKey, VerifyingKey, SECP256k1
-
-
-# def sign_message(private_key_hex, message):
-#     sk = SigningKey.from_string(bytes.fromhex(private_key_hex), curve=SECP256k1)
-#     signature = sk.sign(message.encode())
-#     return signature.hex()
-
-
-# def verify_signature(public_key_hex, message, signature_hex):
-#     vk = VerifyingKey.from_string(bytes.fromhex(public_key_hex), curve=SECP256k1)
-#     return vk.verify(bytes.fromhex(signature_hex), message.encode())
 import hashlib
 import base64
 from ecdsa import SigningKey, VerifyingKey, SECP256k1
 
-
-# =========================
 # SIGN TRANSACTION
-# =========================
-
 def sign_transaction(private_key_hex, message_hash):
     """
     Signs a hashed message using the private key.
@@ -38,11 +22,7 @@ def sign_transaction(private_key_hex, message_hash):
     # Encode signature to base64 for storage
     return base64.b64encode(signature).decode()
 
-
-# =========================
 # VERIFY SIGNATURE
-# =========================
-
 def verify_signature(public_key_hex, message_hash, signature_b64):
     """
     Verifies a signed message.
